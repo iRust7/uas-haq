@@ -3,6 +3,7 @@ import '../../data/models/book.dart';
 import '../../data/repositories/book_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../core/widgets/enhanced_widgets.dart';
+import '../../core/widgets/pdf_thumbnail_widget.dart';
 import '../book_detail/book_detail_screen.dart';
 import '../book_form/book_form_screen.dart';
 
@@ -270,19 +271,25 @@ class _ShelfScreenState extends State<ShelfScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // PDF Icon Container
+              // PDF Thumbnail Container
               Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.picture_as_pdf,
-                      size: 56,
-                      color: Colors.blue[700],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: PdfThumbnailWidget(
+                      pdfPath: book.filePathOrUri,
+                      bookId: book.id,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
