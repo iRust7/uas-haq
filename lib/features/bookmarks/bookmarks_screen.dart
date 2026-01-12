@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import '../../data/models/book.dart';
 import '../../data/repositories/book_repository.dart';
 import '../book_detail/book_detail_screen.dart';
@@ -138,10 +139,13 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.bookmark_border,
-              size: 80,
-              color: Colors.grey[400],
+            Lottie.asset(
+              'assets/animations/bookmarkpage.json',
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
+              repeat: true,
+              animate: true,
             ),
             const SizedBox(height: 16),
             Text(

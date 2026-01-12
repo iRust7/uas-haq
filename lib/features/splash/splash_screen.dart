@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../routes/app_routes.dart';
 
@@ -54,11 +55,14 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon aplikasi
-            Icon(
-              Icons.menu_book_rounded,
-              size: 100,
-              color: Theme.of(context).colorScheme.primary,
+            // Animated logo
+            Lottie.asset(
+              'assets/animations/iconsplash.json',
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
+              repeat: true,
+              animate: true,
             ),
             const SizedBox(height: 24),
             
