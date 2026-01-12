@@ -93,9 +93,8 @@ class _BookFormScreenState extends State<BookFormScreen> {
 
   /// Handle pick PDF file
   Future<void> _handlePickPDF() async {
-    // Request storage permission first (Android runtime permission)
-    final granted = await _requestStoragePermission();
-    if (!granted) return;
+    // FilePicker uses SAF (Storage Access Framework) which handles permissions automatically
+    // No need to request Permission.storage (deprecated on Android 13+)
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -140,51 +139,6 @@ class _BookFormScreenState extends State<BookFormScreen> {
           ),
         );
       }
-    }
-  }
-
-  /// Request storage permission on Android
-  Future<bool> _requestStoragePermission() async {
-    try {
-      if (!Platform.isAndroid) return true;
-
-      final status = await Permission.storage.status;
-      if (status.isGranted) return true;
-
-      final result = await Permission.storage.request();
-      if (result.isGranted) return true;
-
-      if (result.isPermanentlyDenied) {
-        if (!mounted) return false;
-        // Prompt user to open app settings
-        final open = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Izin Penyimpanan Diperlukan'),
-            content: const Text('Agar dapat mengimpor file PDF, izinkan akses penyimpanan dari Pengaturan.'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Buka Pengaturan')),
-            ],
-          ),
-        );
-
-        if (open == true) {
-          await openAppSettings();
-        }
-      } else {
-        if (!mounted) return false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Izin penyimpanan diperlukan untuk memilih file PDF.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-
-      return false;
-    } catch (e) {
-      return false;
     }
   }
 
