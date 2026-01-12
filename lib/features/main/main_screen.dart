@@ -1,0 +1,104 @@
+import 'package:flutter/material.dart';
+import '../../core/utils/animation_utils.dart';
+import '../home/home_screen.dart';
+import '../recent/recent_screen.dart';
+import '../shelf/shelf_screen.dart';
+import '../bookmarks/bookmarks_screen.dart';
+import '../files/my_files_screen.dart';
+import '../more/more_screen.dart';
+
+/// MainScreen - Container with bottom navigation
+/// 
+/// 6 tabs:
+/// - Home: Dashboard with sections
+/// - Recent: Recently read books
+/// - My Shelf: All books with filters
+/// - Bookmarks: Grouped bookmarks
+/// - My Files: Browse PDF files
+/// - More: Profile, settings, about
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _currentIndex = 0;
+  
+  // Tab screens
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    RecentScreen(),
+    ShelfScreen(),
+    BookmarksScreen(),
+    MyFilesScreen(),
+    MoreScreen(),
+  ];
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: AnimatedSwitcher(
+        duration: AppAnimations.fast, // 150ms fade-through
+        switchInCurve: AppAnimations.fadeInCurve,
+        switchOutCurve: AppAnimations.fadeOutCurve,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey(_currentIndex),
+          child: _screens[_currentIndex],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _currentIndex,
+        onTap: _onTabTapped,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.schedule_outlined),
+            activeIcon: Icon(Icons.schedule),
+            label: 'Recent',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book_outlined),
+            activeIcon: Icon(Icons.book),
+            label: 'My Shelf',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark_border),
+            activeIcon: Icon(Icons.bookmark),
+            label: 'Bookmarks',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder_outlined),
+            activeIcon: Icon(Icons.folder),
+            label: 'My Files',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.more_vert_outlined),
+            activeIcon: Icon(Icons.more_vert),
+            label: 'More',
+          ),
+        ],
+      ),
+    );
+  }
+}
