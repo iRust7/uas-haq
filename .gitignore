@@ -39,6 +39,11 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Firebase/Google Services configuration files
+google-services.json
+**/google-services.json
+firebase_options.dart
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile

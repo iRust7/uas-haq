@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:uuid/uuid.dart';
 import '../../data/models/book.dart';
+import '../../data/models/reading_session.dart';
 import '../../data/repositories/book_repository.dart';
+import '../../data/repositories/reading_session_repository.dart';
 
 /// ReaderScreen - PDF Reader dengan progress tracking
 /// 
@@ -28,12 +31,42 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool _isReady = false;
   String? _errorMessage;
   final _bookRepository = BookRepository();
+  final _sessionRepository = ReadingSessionRepository();
+  ReadingSession? _currentSession;
 
   @override
   void initState() {
     super.initState();
     // Start from last saved page (0-indexed for controller)
     _currentPage = widget.book.lastPage > 0 ? widget.book.lastPage - 1 : 0;
+    // Create reading session
+    _startReadingSession();
+  }
+  
+  @override
+  void dispose() {
+    // End reading session when leaving the screen
+    _endReadingSession();
+    super.dispose();
+  }
+  
+  /// Start a new reading session
+  void _startReadingSession() {
+    _currentSession = ReadingSession(
+      id: const Uuid().v4(),
+      bookId: widget.book.id,
+      startTime: DateTime.now(),
+      startPage: _currentPage + 1, // 1-indexed
+    );
+    _sessionRepository.createSession(_currentSession!);
+  }
+  
+  /// End the current reading session
+  void _endReadingSession() {
+    if (_currentSession != null && _currentSession!.isActive) {
+      _currentSession!.endSession(finalPage: _currentPage + 1);
+      _sessionRepository.updateSession(_currentSession!);
+    }
   }
 
   /// Check if current page is bookmarked
@@ -111,6 +144,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
     
     // Save to Hive
     await widget.book.save();
+    
+    // Update current reading session's end page
+    if (_currentSession != null) {
+      _currentSession!.endPage = page + 1; // 1-indexed
+      await _sessionRepository.updateSession(_currentSession!);
+    }
   }
 
   /// Called on PDF error

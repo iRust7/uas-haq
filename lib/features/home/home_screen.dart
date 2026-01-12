@@ -9,6 +9,7 @@ import '../../core/widgets/enhanced_widgets.dart';
 import '../../core/widgets/pdf_thumbnail_widget.dart';
 import '../book_detail/book_detail_screen.dart';
 import '../files/my_files_screen.dart';
+import '../statistics/widgets/statistics_card.dart';
 
 /// Home Screen - Bold Magazine Layout
 /// 
@@ -156,6 +157,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       delegate: SliverChildListDelegate([
                         // Stats Pills
                         _buildStatsPills(),
+                        const SizedBox(height: 32),
+                        
+                        // Reading Statistics Card
+                        const StatisticsCard(),
                         const SizedBox(height: 32),
                         
                         // Starred Folders
