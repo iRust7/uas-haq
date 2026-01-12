@@ -638,60 +638,64 @@ _isSearching = false;
           width: 1,
         ),
       ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: (isDirectory ? Colors.amber : Colors.red).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            isDirectory ? Icons.folder : Icons.picture_as_pdf,
-            color: isDirectory ? Colors.amber[700] : Colors.red[400],
-            size: 28,
-          ),
-        ),
-        title: Text(
-          name,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : Colors.black,
-          ),
-        ),
-        subtitle: isDirectory
-            ? Text(
-                'Folder',
-                style: TextStyle(color: isDark ? Colors.white60 : Colors.black45),
-              )
-            : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isDirectory)
-              IconButton(
-                icon: Icon(
-                  isStarred ? Icons.star : Icons.star_border,
-                  color: isStarred ? Colors.amber[700] : (isDark ? Colors.white54 : Colors.black38),
-                ),
-                onPressed: () => _toggleStar(entity as Directory),
-              ),
-            if (!isDirectory)
-            IconButton(
-              icon: const Icon(Icons.more_vert),
-              onPressed: () => _showFileMenu(entity as File),
+      child: InkWell(
+        onTap: () {
+          if (isDirectory) {
+            _navigateToDirectory(entity as Directory);
+          } else {
+            _openPdf(entity as File);
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (isDirectory ? Colors.amber : Colors.red).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-          const Icon(Icons.chevron_right),
-        ],
+            child: Icon(
+              isDirectory ? Icons.folder : Icons.picture_as_pdf,
+              color: isDirectory ? Colors.amber[700] : Colors.red[400],
+              size: 28,
+            ),
+          ),
+          title: Text(
+            name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          subtitle: isDirectory
+              ? Text(
+                  'Folder',
+                  style: TextStyle(color: isDark ? Colors.white60 : Colors.black45),
+                )
+              : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isDirectory)
+                IconButton(
+                  icon: Icon(
+                    isStarred ? Icons.star : Icons.star_border,
+                    color: isStarred ? Colors.amber[700] : (isDark ? Colors.white54 : Colors.black38),
+                  ),
+                  onPressed: () => _toggleStar(entity as Directory),
+                ),
+              if (!isDirectory)
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () => _showFileMenu(entity as File),
+                ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
       ),
-      onTap: () {
-        if (isDirectory) {
-          _navigateToDirectory(entity as Directory);
-        } else {
-          _openPdf(entity as File);
-        }
-      },
     );
   }
 }
