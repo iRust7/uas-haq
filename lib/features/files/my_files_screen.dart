@@ -465,23 +465,38 @@ _isSearching = false;
   
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        elevation: 0,
         title: _isSearching
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                decoration: InputDecoration(
                   hintText: 'Search files...',
+                  hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black45),
                   border: InputBorder.none,
                 ),
                 onChanged: (_) => _applyFilters(),
               )
-            : const Text('My Files'),
+            : Text(
+                'MY FILES',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
         actions: [
           if (_isSearching)
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: Icon(Icons.close, color: isDark ? Colors.white : Colors.black),
               onPressed: () {
                 setState(() {
                   _isSearching = false;
@@ -492,23 +507,23 @@ _isSearching = false;
             )
           else ...[
             IconButton(
-              icon: const Icon(Icons.search),
+              icon: Icon(Icons.search, color: isDark ? Colors.white : Colors.black),
               onPressed: () => setState(() => _isSearching = true),
               tooltip: 'Search',
             ),
             IconButton(
-              icon: const Icon(Icons.filter_list),
+              icon: Icon(Icons.filter_list, color: isDark ? Colors.white : Colors.black),
               onPressed: _showFilterMenu,
               tooltip: 'Filter',
             ),
             IconButton(
-              icon: const Icon(Icons.create_new_folder),
+              icon: Icon(Icons.create_new_folder, color: isDark ? Colors.white : Colors.black),
               onPressed: _createFolder,
               tooltip: 'Create Folder',
             ),
             if (_currentDirectory != null)
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: Icon(Icons.refresh, color: isDark ? Colors.white : Colors.black),
                 onPressed: _loadDirectory,
                 tooltip: 'Refresh',
               ),
@@ -608,30 +623,61 @@ _isSearching = false;
   }
   
   Widget _buildEntityTile(FileSystemEntity entity) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDirectory = entity is Directory;
     final name = path.basename(entity.path);
     final isStarred = isDirectory && _starredRepo.isStarred(entity.path);
     
-    return ListTile(
-      leading: Icon(
-        isDirectory ? Icons.folder : Icons.picture_as_pdf,
-        color: isDirectory ? Colors.amber : Colors.red[300],
-        size: 32,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
       ),
-      title: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: isDirectory ? const Text('Folder') : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isDirectory)
-            IconButton(
-              icon: Icon(
-                isStarred ? Icons.star : Icons.star_border,
-                color: isStarred ? Colors.amber : null,
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: (isDirectory ? Colors.amber : Colors.red).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            isDirectory ? Icons.folder : Icons.picture_as_pdf,
+            color: isDirectory ? Colors.amber[700] : Colors.red[400],
+            size: 28,
+          ),
+        ),
+        title: Text(
+          name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
+        subtitle: isDirectory
+            ? Text(
+                'Folder',
+                style: TextStyle(color: isDark ? Colors.white60 : Colors.black45),
+              )
+            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDirectory)
+              IconButton(
+                icon: Icon(
+                  isStarred ? Icons.star : Icons.star_border,
+                  color: isStarred ? Colors.amber[700] : (isDark ? Colors.white54 : Colors.black38),
+                ),
+                onPressed: () => _toggleStar(entity as Directory),
               ),
-              onPressed: () => _toggleStar(entity as Directory),
-            ),
-          if (!isDirectory)
+            if (!isDirectory)
             IconButton(
               icon: const Icon(Icons.more_vert),
               onPressed: () => _showFileMenu(entity as File),

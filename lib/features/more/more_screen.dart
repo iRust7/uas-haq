@@ -122,49 +122,84 @@ class _MoreScreenState extends State<MoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('More'),
-      ),
-      body: ListView(
-        children: [
-          // Profile Section
-          _buildProfileCard(),
-          const Divider(),
-          
-          // General Section
-          _buildSectionHeader('General'),
-          _buildListTile(
-            icon: Icons.settings,
-            title: 'Settings',
-            subtitle: 'App preferences and theme',
-            onTap: _handleSettings,
+      backgroundColor: isDark ? Colors.black : Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          // Bold App Bar
+          SliverAppBar(
+            floating: true,
+            backgroundColor: isDark ? Colors.black : Colors.white,
+            elevation: 0,
+            title: Text(
+              'MORE',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
           ),
-          _buildListTile(
-            icon: Icons.info_outline,
-            title: 'About',
-            subtitle: 'App information',
-            onTap: _handleAbout,
-          ),
-          const Divider(),
           
-          // App Section
-          _buildSectionHeader('App'),
-          _buildListTile(
-            icon: Icons.exit_to_app,
-            title: 'Exit',
-            subtitle: 'Close the application',
-            onTap: _handleExit,
-            iconColor: Colors.red,
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                // Profile Section
+                _buildProfileCard(isDark),
+                const SizedBox(height: 8),
+                
+                // General Section
+                _buildSectionHeader('GENERAL', isDark),
+                _buildListTile(
+                  icon: Icons.settings,
+                  title: 'Settings',
+                  subtitle: 'App preferences and theme',
+                  onTap: _handleSettings,
+                  isDark: isDark,
+                ),
+                _buildListTile(
+                  icon: Icons.info_outline,
+                  title: 'About',
+                  subtitle: 'App information',
+                  onTap: _handleAbout,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 16),
+                
+                // App Section
+                _buildSectionHeader('APP', isDark),
+                _buildListTile(
+                  icon: Icons.exit_to_app,
+                  title: 'Exit',
+                  subtitle: 'Close the application',
+                  onTap: _handleExit,
+                  iconColor: Colors.red,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildProfileCard(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
       child: Column(
         children: [
           // Avatar
@@ -175,65 +210,75 @@ class _MoreScreenState extends State<MoreScreen> {
               _userInitial,
               style: const TextStyle(
                 fontSize: 32,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
                 color: Colors.white,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
           // Username
           Text(
             _username,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black,
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           
           // User type badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: _isGuest ? Colors.orange : Colors.green,
-              borderRadius: BorderRadius.circular(12),
+              color: _isGuest ? Colors.orange[700] : Colors.green[700],
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               _isGuest ? 'GUEST' : 'USER',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
           // Auth buttons
           if (_isGuest) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              spacing: 12,
+              alignment: WrapAlignment.center,
               children: [
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: _handleSignIn,
                   icon: const Icon(Icons.login),
                   label: const Text('Sign In'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
                 ),
-                const SizedBox(width: 12),
                 OutlinedButton.icon(
                   onPressed: _handleRegister,
                   icon: const Icon(Icons.person_add),
                   label: const Text('Register'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
                 ),
               ],
             ),
           ] else ...[
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: _handleLogout,
               icon: const Icon(Icons.logout),
               label: const Text('Logout'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red[700],
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -242,15 +287,20 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+            color: isDark ? Colors.white70 : Colors.black54,
+          ),
+        ),
       ),
     );
   }
@@ -260,14 +310,40 @@ class _MoreScreenState extends State<MoreScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    required bool isDark,
     Color? iconColor,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: iconColor),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: iconColor ?? (isDark ? Colors.white70 : Colors.black54)),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: isDark ? Colors.white60 : Colors.black45,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: isDark ? Colors.white54 : Colors.black38,
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }
