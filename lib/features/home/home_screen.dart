@@ -24,7 +24,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _bookRepository = BookRepository();
   final _starredRepo = StarredFoldersRepository();
   List<Book> _allBooks = [];
@@ -34,8 +34,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initStarredRepo();
     _loadBooks();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Reload data when app comes to foreground or resumes
+    if (state == AppLifecycleState.resumed) {
+      _loadBooks();
+    }
   }
 
   Future<void> _initStarredRepo() async {
@@ -82,13 +97,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return books.take(6).toList();
   }
 
-  void _handleBookTap(Book book) {
-    Navigator.push(
+  void _handleBookTap(Book book) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => BookDetailScreen(book: book),
       ),
-    ).then((_) => _loadBooks());
+    );
+    // Reload setelah kembali dari detail screen
+    _loadBooks();
   }
 
   @override

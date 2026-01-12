@@ -44,10 +44,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
   /// Toggle bookmark for current page
   Future<void> _toggleBookmark() async {
     final pageNumber = _currentPage + 1; // Convert to 1-indexed
-    final bookmarks = List<int>.from(widget.book.bookmarks);
     
-    if (bookmarks.contains(pageNumber)) {
-      bookmarks.remove(pageNumber);
+    if (widget.book.bookmarks.contains(pageNumber)) {
+      widget.book.bookmarks.remove(pageNumber);
+      await widget.book.save();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -57,8 +57,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
         );
       }
     } else {
-      bookmarks.add(pageNumber);
-      bookmarks.sort(); // Keep sorted
+      widget.book.bookmarks.add(pageNumber);
+      widget.book.bookmarks.sort(); // Keep sorted
+      await widget.book.save();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -70,8 +71,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       }
     }
     
-    final updatedBook = widget.book.copyWith(bookmarks: bookmarks);
-    await _bookRepository.updateBook(updatedBook);
+    setState(() {});
   }
 
   /// Called when PDF is rendered
@@ -88,13 +88,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
     
     // Update total pages in Hive if not set or changed
     if (widget.book.totalPages != _totalPages) {
-      final updatedBook = widget.book.copyWith(totalPages: _totalPages);
-      _bookRepository.updateBook(updatedBook);
+      widget.book.totalPages = _totalPages;
+      widget.book.save();
     }
   }
 
   /// Called when page changes
-  void _onPageChanged(int? page, int? total) {
+  void _onPageChanged(int? page, int? total) async {
     if (page == null) return;
     
     setState(() {
@@ -102,14 +102,15 @@ class _ReaderScreenState extends State<ReaderScreen> {
       if (total != null) _totalPages = total;
     });
     
-    // Update lastPage and lastReadAt in Hive (save as 1-indexed for user display)
-    final updatedBook = widget.book.copyWith(
-      lastPage: page + 1, // Convert to 1-indexed
-      totalPages: total ?? _totalPages,
-      lastReadAt: DateTime.now(), // Track when book was last read
-    );
+    // Update book directly in Hive
+    widget.book.lastPage = page + 1; // Convert to 1-indexed
+    widget.book.lastReadAt = DateTime.now(); // Track when book was last read
+    if (total != null) {
+      widget.book.totalPages = total;
+    }
     
-    _bookRepository.updateBook(updatedBook);
+    // Save to Hive
+    await widget.book.save();
   }
 
   /// Called on PDF error

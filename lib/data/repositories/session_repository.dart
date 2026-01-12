@@ -1,18 +1,28 @@
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:hive/hive.dart';
 import '../models/user.dart';
+import '../../core/services/firebase_auth_service.dart';
+import '../../core/services/firestore_service.dart';
 
 /// SessionRepository - Mengelola session login dan registrasi pengguna
 /// 
-/// Menggunakan Hive dengan 2 boxes:
-/// - Box 'user': current session
-/// - Box 'users': semua registered users
+/// Menggunakan Firebase Authentication dan Firestore Database
+/// Dengan Hive sebagai cache lokal
 class SessionRepository {
   static const String _sessionBoxName = 'user';
-  static const String _usersBoxName = 'users';
   static const String _currentUserKey = 'current_user';
+  
+  final FirebaseAuthService _authService = FirebaseAuthService();
+  final FirestoreService _firestoreService = FirestoreService();
   
   /// Mengecek apakah user sudah login
   bool isLoggedIn() {
+    // Cek Firebase Auth dulu
+    if (_authService.currentUser != null) {
+      return true;
+    }
+    
+    // Fallback ke Hive cache
     final box = Hive.box<User>(_sessionBoxName);
     final user = box.get(_currentUserKey);
     return user != null && user.isLoggedIn;
@@ -20,6 +30,11 @@ class SessionRepository {
   
   /// Mengecek apakah current user adalah guest
   bool isGuest() {
+    // Guest tidak ada di Firebase
+    if (_authService.currentUser != null) {
+      return false;
+    }
+    
     final box = Hive.box<User>(_sessionBoxName);
     final user = box.get(_currentUserKey);
     return user != null && user.isGuest;
@@ -27,6 +42,12 @@ class SessionRepository {
   
   /// Mendapatkan username yang tersimpan
   String? getUsername() {
+    // Cek Firebase Auth dulu
+    final firebaseUser = _authService.currentUser;
+    if (firebaseUser != null) {
+      return firebaseUser.displayName ?? firebaseUser.email?.split('@')[0];
+    }
+    
     final box = Hive.box<User>(_sessionBoxName);
     final user = box.get(_currentUserKey);
     return user?.username;
@@ -52,39 +73,48 @@ class SessionRepository {
     }
   }
   
-  /// Registrasi user baru
+  /// Registrasi user baru dengan Firebase Auth
   /// 
-  /// Validasi:
-  /// - Username tidak boleh "Guest" (reserved)
-  /// - Username harus unique
+  /// Menggunakan Email/Password authentication
   Future<Map<String, dynamic>> register({
-    required String username,
+    required String email,
     required String password,
+    String? displayName,
   }) async {
     try {
-      // Validasi username tidak boleh "Guest"
-      if (username.toLowerCase() == 'guest') {
-        return {
-          'success': false,
-          'message': 'Username "Guest" tidak diperbolehkan',
-        };
-      }
-      
-      // Cek apakah username sudah ada
-      final usersBox = Hive.box<User>(_usersBoxName);
-      if (usersBox.containsKey(username)) {
-        return {
-          'success': false,
-          'message': 'Username sudah terdaftar',
-        };
-      }
-      
-      // Buat user baru dan simpan ke users box
-      final newUser = User.createRegistered(
-        username: username,
+      // Register ke Firebase Auth
+      final result = await _authService.registerWithEmail(
+        email: email,
         password: password,
+        displayName: displayName,
       );
-      await usersBox.put(username, newUser);
+      
+      if (!result['success']) {
+        return result;
+      }
+      
+      final firebaseUser = result['user'] as firebase_auth.User;
+      
+      // Simpan ke Firestore
+      await _firestoreService.saveUser(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        authProvider: 'email',
+      );
+      
+      // Simpan ke Hive cache
+      final user = User.fromFirebase(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        authProvider: 'email',
+      );
+      
+      final box = Hive.box<User>(_sessionBoxName);
+      await box.put(_currentUserKey, user);
       
       return {
         'success': true,
@@ -98,40 +128,38 @@ class SessionRepository {
     }
   }
   
-  /// Login dengan username dan password
-  /// 
-  /// Validasi password dan set sebagai current session
+  /// Login dengan Email dan Password menggunakan Firebase Auth
   Future<Map<String, dynamic>> login({
-    required String username,
+    required String email,
     required String password,
   }) async {
     try {
-      final usersBox = Hive.box<User>(_usersBoxName);
+      // Login ke Firebase Auth
+      final result = await _authService.signInWithEmail(
+        email: email,
+        password: password,
+      );
       
-      // Cek apakah user terdaftar
-      if (!usersBox.containsKey(username)) {
-        return {
-          'success': false,
-          'message': 'Username tidak ditemukan',
-        };
+      if (!result['success']) {
+        return result;
       }
       
-      // Get user dan validasi password
-      final user = usersBox.get(username);
-      if (user == null || user.password != password) {
-        return {
-          'success': false,
-          'message': 'Password salah',
-        };
-      }
+      final firebaseUser = result['user'] as firebase_auth.User;
       
-      // Update last login dan set sebagai current session
-      user.lastLoginAt = DateTime.now();
-      user.isLoggedIn = true;
-      await user.save(); // Save to users box
+      // Update last login di Firestore
+      await _firestoreService.updateLastLogin(firebaseUser.uid);
       
-      final sessionBox = Hive.box<User>(_sessionBoxName);
-      await sessionBox.put(_currentUserKey, user);
+      // Simpan ke Hive cache
+      final user = User.fromFirebase(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        authProvider: 'email',
+      );
+      
+      final box = Hive.box<User>(_sessionBoxName);
+      await box.put(_currentUserKey, user);
       
       return {
         'success': true,
@@ -145,16 +173,69 @@ class SessionRepository {
     }
   }
   
+  /// Login dengan Google
+  Future<Map<String, dynamic>> loginWithGoogle() async {
+    try {
+      // Login dengan Google
+      final result = await _authService.signInWithGoogle();
+      
+      if (!result['success']) {
+        return result;
+      }
+      
+      final firebaseUser = result['user'] as firebase_auth.User;
+      
+      // Simpan/update di Firestore
+      await _firestoreService.saveUser(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        authProvider: 'google',
+      );
+      
+      // Simpan ke Hive cache
+      final user = User.fromFirebase(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        authProvider: 'google',
+      );
+      
+      final box = Hive.box<User>(_sessionBoxName);
+      await box.put(_currentUserKey, user);
+      
+      return {
+        'success': true,
+        'message': 'Login dengan Google berhasil',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
+  
   /// Menghapus session (logout)
   /// 
-  /// Kembali ke guest mode setelah logout
+  /// Logout dari Firebase dan kembali ke guest mode
   Future<bool> logout() async {
     try {
+      // Logout dari Firebase
+      await _authService.signOut();
+      
       // Logout dan auto login sebagai guest
       await loginAsGuest();
       return true;
     } catch (e) {
       return false;
     }
+  }
+  
+  /// Reset password dengan Firebase Auth
+  Future<Map<String, dynamic>> resetPassword(String email) async {
+    return await _authService.resetPassword(email);
   }
 }

@@ -20,11 +20,12 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _sessionRepo = SessionRepository();
   
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   bool _obscurePassword = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -50,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -65,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     try {
       final result = await _sessionRepo.login(
-        username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       
@@ -104,6 +105,43 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     await _sessionRepo.loginAsGuest();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, AppRoutes.main);
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+    
+    try {
+      final result = await _sessionRepo.loginWithGoogle();
+      
+      if (!mounted) return;
+      
+      if (result['success'] == true) {
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
+    }
   }
 
   @override
@@ -208,15 +246,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           key: _formKey,
                           child: Column(
                             children: [
-                              // Username Field
+                              // Email Field
                               TextFormField(
-                                controller: _usernameController,
+                                controller: _emailController,
                                 style: TextStyle(color: isDark ? Colors.white : Colors.black),
                                 decoration: InputDecoration(
-                                  labelText: 'Username',
-                                  hintText: 'Enter your username',
+                                  labelText: 'Email',
+                                  hintText: 'Enter your email',
                                   prefixIcon: Icon(
-                                    Icons.person_outline,
+                                    Icons.email_outlined,
                                     color: isDark ? Colors.white70 : Colors.black54,
                                   ),
                                   filled: true,
@@ -238,8 +276,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                     borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
                                   ),
                                 ),
+                                keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
-                                validator: Validators.validateUsername,
+                                validator: Validators.validateEmail,
                               ),
                               const SizedBox(height: 20),
                               
@@ -324,6 +363,71 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                         ),
                                 ),
                               ),
+                              const SizedBox(height: 24),
+                              
+                              // Divider
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text(
+                                      'OR',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white60 : Colors.black54,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              
+                              // Google Sign-In Button
+                              SizedBox(
+                                width: double.infinity,
+                                height: 56,
+                                child: OutlinedButton.icon(
+                                  onPressed: (_isLoading || _isGoogleLoading) ? null : _handleGoogleSignIn,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: isDark ? Colors.white : Colors.black,
+                                    side: BorderSide(
+                                      color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  icon: _isGoogleLoading
+                                      ? const SizedBox(
+                                          height: 24,
+                                          width: 24,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : Image.network(
+                                          'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                                          height: 24,
+                                          width: 24,
+                                        ),
+                                  label: Text(
+                                    _isGoogleLoading ? 'SIGNING IN...' : 'SIGN IN WITH GOOGLE',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
                               const SizedBox(height: 16),
                               
                               // Guest Button
@@ -331,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 width: double.infinity,
                                 height: 56,
                                 child: OutlinedButton(
-                                  onPressed: _isLoading ? null : _handleContinueAsGuest,
+                                  onPressed: (_isLoading || _isGoogleLoading) ? null : _handleContinueAsGuest,
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: isDark ? Colors.white : Colors.black,
                                     side: BorderSide(

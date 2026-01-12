@@ -20,7 +20,7 @@ class RecentScreen extends StatefulWidget {
   State<RecentScreen> createState() => _RecentScreenState();
 }
 
-class _RecentScreenState extends State<RecentScreen> {
+class _RecentScreenState extends State<RecentScreen> with WidgetsBindingObserver {
   final _bookRepository = BookRepository();
   List<Book> _recentBooks = [];
   bool _isLoading = true;
@@ -28,18 +28,39 @@ class _RecentScreenState extends State<RecentScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadRecentBooks();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Reload data when app comes to foreground or resumes
+    if (state == AppLifecycleState.resumed) {
+      _loadRecentBooks();
+    }
   }
 
   Future<void> _loadRecentBooks() async {
     setState(() => _isLoading = true);
     
     try {
+      // Get fresh data from Hive
       final allBooks = _bookRepository.getAllBooks();
-      _recentBooks = allBooks
+      // Filter books yang pernah dibaca (lastReadAt != null)
+      final recentBooks = allBooks
           .where((book) => book.lastReadAt != null)
-          .toList()
-        ..sort((a, b) => b.lastReadAt!.compareTo(a.lastReadAt!));
+          .toList();
+      
+      // Sort by lastReadAt descending (terbaru dulu)
+      recentBooks.sort((a, b) => b.lastReadAt!.compareTo(a.lastReadAt!));
+      
+      _recentBooks = recentBooks;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

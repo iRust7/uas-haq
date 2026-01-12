@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "529600017996",
+    "project_id": "folium-911cd",
+    "storage_bucket": "folium-911cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:529600017996:android:87f46e7aef12578de2e6e9",
+        "android_client_info": {
+          "package_name": "com.folium.haqeust"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNu1DVh0esf9b_JPmJwxXrubUu_BpA7ZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

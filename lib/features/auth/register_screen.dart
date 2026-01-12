@@ -20,7 +20,8 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _displayNameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _sessionRepo = SessionRepository();
@@ -52,7 +53,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
+    _displayNameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _animationController.dispose();
@@ -78,8 +80,11 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     
     try {
       final result = await _sessionRepo.register(
-        username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
         password: _passwordController.text,
+        displayName: _displayNameController.text.trim().isEmpty 
+            ? null 
+            : _displayNameController.text.trim(),
       );
       
       if (!mounted) return;
@@ -87,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message']),
+            content: const Text('Registrasi berhasil! Logging you in...'),
             backgroundColor: Colors.green[700],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -96,7 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         
         await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        // Langsung ke main karena user sudah login otomatis
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -226,13 +232,49 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                           key: _formKey,
                           child: Column(
                             children: [
-                              // Username Field
+                              // Email Field
                               TextFormField(
-                                controller: _usernameController,
+                                controller: _emailController,
                                 style: TextStyle(color: isDark ? Colors.white : Colors.black),
                                 decoration: InputDecoration(
-                                  labelText: 'Username',
-                                  hintText: 'Choose a username',
+                                  labelText: 'Email',
+                                  hintText: 'Enter your email',
+                                  prefixIcon: Icon(
+                                    Icons.email_outlined,
+                                    color: isDark ? Colors.white70 : Colors.black54,
+                                  ),
+                                  filled: true,
+                                  fillColor: isDark 
+                                      ? const Color(0xFF2A2A2A)
+                                      : const Color(0xFFF8F9FA),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(
+                                      color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(color: Colors.green[600]!, width: 2),
+                                  ),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                validator: Validators.validateEmail,
+                              ),
+                              const SizedBox(height: 20),
+                              
+                              // Display Name Field (Optional)
+                              TextFormField(
+                                controller: _displayNameController,
+                                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                                decoration: InputDecoration(
+                                  labelText: 'Display Name (Optional)',
+                                  hintText: 'Enter your name',
                                   prefixIcon: Icon(
                                     Icons.person_outline,
                                     color: isDark ? Colors.white70 : Colors.black54,
@@ -257,7 +299,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                   ),
                                 ),
                                 textInputAction: TextInputAction.next,
-                                validator: Validators.validateUsername,
                               ),
                               const SizedBox(height: 20),
                               
