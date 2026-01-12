@@ -120,14 +120,26 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
             floating: true,
             backgroundColor: isDark ? Colors.black : Colors.white,
             elevation: 0,
-            title: Text(
-              'BOOKMARKS',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                color: isDark ? Colors.white : Colors.black,
-              ),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/animations/bookmarkpage.json',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'BOOKMARKS',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+              ],
             ),
           ),
           

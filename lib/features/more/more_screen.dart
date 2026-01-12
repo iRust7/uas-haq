@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../routes/app_routes.dart';
 import '../settings/settings_screen.dart';
@@ -133,14 +134,26 @@ class _MoreScreenState extends State<MoreScreen> {
             floating: true,
             backgroundColor: isDark ? Colors.black : Colors.white,
             elevation: 0,
-            title: Text(
-              'MORE',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                color: isDark ? Colors.white : Colors.black,
-              ),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/animations/more.json',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'MORE',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+              ],
             ),
           ),
           

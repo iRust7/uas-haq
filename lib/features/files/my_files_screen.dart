@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as path;
 import 'package:share_plus/share_plus.dart';
+import 'package:lottie/lottie.dart';
 import '../reader/reader_screen.dart';
 import '../../data/models/book.dart';
 import '../../data/repositories/starred_folders_repository.dart';
@@ -484,14 +485,26 @@ _isSearching = false;
                 ),
                 onChanged: (_) => _applyFilters(),
               )
-            : Text(
-                'MY FILES',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Lottie.asset(
+                    'assets/animations/myfiles.json',
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'MY FILES',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
               ),
         actions: [
           if (_isSearching)

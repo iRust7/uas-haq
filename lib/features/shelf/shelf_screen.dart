@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import '../../data/models/book.dart';
 import '../../data/repositories/book_repository.dart';
 import '../../data/repositories/session_repository.dart';
@@ -109,6 +110,13 @@ class _ShelfScreenState extends State<ShelfScreen> {
             elevation: 0,
             title: Row(
               children: [
+                Lottie.asset(
+                  'assets/animations/shelf.json',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 12),
                 Text(
                   'MY SHELF',
                   style: TextStyle(

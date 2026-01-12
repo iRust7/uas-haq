@@ -19,17 +19,30 @@ class PdfThumbnailService {
     PdfDocument? document;
     
     try {
-      // Validate PDF file exists
+      // Validate PDF file exists and is readable
       final file = File(pdfPath);
       if (!await file.exists()) {
         print('PDF file not found: $pdfPath');
         return null;
       }
       
+      // Check file size - skip if too large (>50MB)
+      final fileSize = await file.length();
+      if (fileSize > 50 * 1024 * 1024) {
+        print('PDF file too large for thumbnail: $pdfPath');
+        return null;
+      }
+      
+      // Check file extension
+      if (!pdfPath.toLowerCase().endsWith('.pdf')) {
+        print('Not a PDF file: $pdfPath');
+        return null;
+      }
+      
       // Open PDF document with timeout
       document = await PdfDocument.openFile(pdfPath)
           .timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 5),
             onTimeout: () => throw TimeoutException('PDF loading timed out'),
           );
       
@@ -41,13 +54,12 @@ class PdfThumbnailService {
       // Get first page (0-indexed in pdfrx)
       final page = document.pages[0];
       
-      // render page to image
-      // width and height are integers in pdfrx render
+      // Render page to image with timeout
       final pageImage = await page.render(
         width: thumbnailWidth.toInt(),
         height: thumbnailHeight.toInt(),
       ).timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 10),
         onTimeout: () => throw TimeoutException('PDF rendering timed out'),
       );
       
@@ -56,24 +68,7 @@ class PdfThumbnailService {
         return null;
       }
 
-      // If pageImage is already bytes (depends on format), return it. 
-      // Typically render returns a structure depending on format.
-      // Checking pdfrx, it often returns ui.Image or similar.
-      // Let's assume usage of creating image.
-      
-      // Actually, looking at common pdfrx usage:
-      // final image = await page.render(...);
-      // image.pixels (Uint8List)
-      
-      // Let's rely on standard dart:ui conversion if we get a generic image object.
-      // But wait, the previous code used `format: PdfPageImageFormat.png`.
-      
-      // Let's look at the search result again: "interact with its underlying pdfrx_engine library... await page.render()."
-      // And "ensure you have ... image package".
-      
-      // Let's try the safest path: render to ui.Image, then toByteData.
-      // The render method in pdfrx usually returns `PdfImage`.
-      
+      // Convert to PNG bytes
       final image = await pageImage.createImage();
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       

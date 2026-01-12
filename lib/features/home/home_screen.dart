@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+import 'package:lottie/lottie.dart';
 import '../../data/models/book.dart';
 import '../../data/repositories/book_repository.dart';
 import '../../data/repositories/starred_folders_repository.dart';
@@ -108,14 +109,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     floating: true,
                     backgroundColor: isDark ? Colors.black : Colors.white,
                     elevation: 0,
-                    title: Text(
-                      'LIBRARY',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
+                    title: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Lottie.asset(
+                          'assets/animations/home.json',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'LIBRARY',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import '../../data/models/book.dart';
 import '../../data/repositories/book_repository.dart';
 import '../../core/widgets/pdf_thumbnail_widget.dart';
@@ -100,14 +101,26 @@ class _RecentScreenState extends State<RecentScreen> {
             floating: true,
             backgroundColor: isDark ? Colors.black : Colors.white,
             elevation: 0,
-            title: Text(
-              'RECENT',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                color: isDark ? Colors.white : Colors.black,
-              ),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/animations/history.json',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'RECENT',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+              ],
             ),
           ),
           
