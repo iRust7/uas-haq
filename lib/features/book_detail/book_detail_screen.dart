@@ -859,7 +859,7 @@ Bagikan dari Offline Book Library
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.play_arrow, size: 28),
+                const Icon(Icons.play_arrow, size: 28, color: Colors.white),
                 const SizedBox(width: 12),
                 Text(
                   _currentBook.lastPage > 0 ? 'CONTINUE READING' : 'START READING',
@@ -867,6 +867,7 @@ Bagikan dari Offline Book Library
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.2,
+                    color: Colors.white,
                   ),
                 ),
               ],

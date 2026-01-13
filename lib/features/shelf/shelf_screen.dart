@@ -248,8 +248,8 @@ class _ShelfScreenState extends State<ShelfScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _handleAddBook,
-        backgroundColor: isDark ? Colors.white : Colors.black,
-        foregroundColor: isDark ? Colors.black : Colors.white,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text(
           'ADD BOOK',

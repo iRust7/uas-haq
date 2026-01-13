@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -7,6 +8,12 @@ import '../../data/models/book.dart';
 import '../../data/models/reading_session.dart';
 import '../../data/repositories/book_repository.dart';
 import '../../data/repositories/reading_session_repository.dart';
+
+/// Reading mode options
+enum ReadingMode {
+  vertical,        // Traditional vertical scroll
+  horizontalFlip,  // Horizontal scroll with page flip animation
+}
 
 /// ReaderScreen - Complete PDF Reader with full overlay controls
 /// 
@@ -46,9 +53,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
   
   // Reader settings
   bool _isDarkMode = false;
+  ReadingMode _readingMode = ReadingMode.vertical;
   
   // PDF Controller  
   PDFViewController? _pdfController;
+  
+  // PageController for horizontal flip mode
+  PageController? _pageController;
   
   // Key for rebuilding PDF widget
   Key _pdfKey = UniqueKey();
@@ -58,12 +69,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
     super.initState();
     _currentPage = widget.book.lastPage > 0 ? widget.book.lastPage - 1 : 0;
     _sliderPage = _currentPage;
+    _pageController = PageController(initialPage: _currentPage);
     _startReadingSession();
   }
   
   @override
   void dispose() {
     _hideOverlayTimer?.cancel();
+    _pageController?.dispose();
     _endReadingSession();
     // Reset orientation
     SystemChrome.setPreferredOrientations([
@@ -183,8 +196,35 @@ class _ReaderScreenState extends State<ReaderScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isDarkMode 
-          ? 'Dark mode enabled (UI only - PDF content unchanged)' 
+          ? 'Dark mode enabled - PDF colors inverted' 
           : 'Light mode enabled'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+  
+  void _switchReadingMode(ReadingMode mode) {
+    if (_readingMode == mode) return;
+    
+    setState(() {
+      _readingMode = mode;
+      // Rebuild PDF views
+      _pdfKey = UniqueKey();
+      
+      // Sync PageController position when switching to horizontal mode
+      if (mode == ReadingMode.horizontalFlip) {
+        _pageController?.dispose();
+        _pageController = PageController(initialPage: _currentPage);
+      }
+    });
+    
+    final modeName = mode == ReadingMode.vertical 
+        ? 'Vertical Scroll' 
+        : 'Horizontal Page Flip';
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Reading mode: $modeName'),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -312,6 +352,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
               ),
             ),
             ListTile(
+              leading: const Icon(Icons.auto_stories),
+              title: Text(
+                'Reading Mode',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _isDarkMode ? Colors.white : Colors.black,
+                ),
+              ),
+              subtitle: Text(
+                _readingMode == ReadingMode.vertical 
+                    ? 'Vertical Scroll' 
+                    : 'Horizontal Page Flip',
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _showReadingModeDialog();
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.brightness_6),
               title: Text(
                 'Dark Mode',
@@ -320,7 +379,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   color: _isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
-              subtitle: const Text('Changes UI background only'),
+              subtitle: const Text('Inverts PDF colors for dark reading'),
               trailing: Switch(
                 value: _isDarkMode,
                 onChanged: (value) {
@@ -409,6 +468,53 @@ class _ReaderScreenState extends State<ReaderScreen> {
       ),
     );
   }
+  
+  void _showReadingModeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reading Mode'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('Vertical Scroll'),
+              subtitle: const Text('Traditional scrolling'),
+              leading: Radio<ReadingMode>(
+                value: ReadingMode.vertical,
+                groupValue: _readingMode,
+                onChanged: (value) {
+                  Navigator.pop(context);
+                  _switchReadingMode(value!);
+                },
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _switchReadingMode(ReadingMode.vertical);
+              },
+            ),
+            ListTile(
+              title: const Text('Horizontal Page Flip'),
+              subtitle: const Text('Swipe with page flip animation'),
+              leading: Radio<ReadingMode>(
+                value: ReadingMode.horizontalFlip,
+                groupValue: _readingMode,
+                onChanged: (value) {
+                  Navigator.pop(context);
+                  _switchReadingMode(value!);
+                },
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _switchReadingMode(ReadingMode.horizontalFlip);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   void _onPdfViewCreated(PDFViewController controller) {
     _pdfController = controller;
@@ -451,7 +557,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = _isDarkMode ? Colors.grey[900]! : Colors.grey[200]!;
+    final bgColor = _isDarkMode ? Colors.black : Colors.grey[200]!;
     
     return Scaffold(
       backgroundColor: bgColor,
@@ -459,32 +565,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
           ? _buildErrorView()
           : Stack(
               children: [
-                // PDF View - NO gesture detector wrapping
-                Container(
-                  color: bgColor,
-                  child: PDFView(
-                    key: _pdfKey, // Force rebuild when page changes
-                    filePath: widget.book.filePathOrUri,
-                    enableSwipe: true,
-                    swipeHorizontal: false,
-                    autoSpacing: true,
-                    pageFling: true,
-                    pageSnap: true,
-                    defaultPage: _currentPage,
-                    fitPolicy: FitPolicy.BOTH,
-                    preventLinkNavigation: false,
-                    backgroundColor: bgColor,
-                    onViewCreated: _onPdfViewCreated,
-                    onRender: _onRender,
-                    onPageChanged: _onPageChanged,
-                    onError: _onError,
-                    onPageError: (page, error) {
-                      setState(() {
-                        _errorMessage = 'Error on page $page: $error';
-                      });
-                    },
-                  ),
-                ),
+                // Render based on reading mode
+                _readingMode == ReadingMode.vertical
+                    ? _buildVerticalReader(bgColor)
+                    : _buildHorizontalFlipReader(bgColor),
                 
                 // Transparent overlay for tap detection (only when overlay hidden)
                 if (!_showOverlay)
@@ -514,6 +598,156 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 _buildPagePreview(),
               ],
             ),
+    );
+  }
+  
+  // Vertical scroll mode (existing implementation)
+  Widget _buildVerticalReader(Color bgColor) {
+    return _applyDarkModeFilter(
+      Container(
+        color: _isDarkMode ? Colors.white : bgColor, // Use white for inversion in dark mode
+        child: PDFView(
+          key: _pdfKey,
+          filePath: widget.book.filePathOrUri,
+          enableSwipe: true,
+          swipeHorizontal: false,
+          autoSpacing: true,
+          pageFling: true,
+          pageSnap: true,
+          defaultPage: _currentPage,
+          fitPolicy: FitPolicy.BOTH,
+          preventLinkNavigation: false,
+          backgroundColor: _isDarkMode ? Colors.white : bgColor,
+          onViewCreated: _onPdfViewCreated,
+          onRender: _onRender,
+          onPageChanged: _onPageChanged,
+          onError: _onError,
+          onPageError: (page, error) {
+            setState(() {
+              _errorMessage = 'Error on page $page: $error';
+            });
+          },
+        ),
+      ),
+    );
+  }
+  
+  // Horizontal page flip mode (new implementation)
+  Widget _buildHorizontalFlipReader(Color bgColor) {
+    if (_totalPages == 0 || !_isReady) {
+      // Show loading or placeholder
+      return Container(
+        color: bgColor,
+        child: PDFView(
+          key: _pdfKey,
+          filePath: widget.book.filePathOrUri,
+          enableSwipe: false,
+          defaultPage: _currentPage,
+          backgroundColor: bgColor,
+          onRender: _onRender,
+          onError: _onError,
+        ),
+      );
+    }
+    
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: _totalPages,
+      // Optimize: Only cache 1 page before and after current page
+      allowImplicitScrolling: true,
+      onPageChanged: (page) {
+        setState(() {
+          _currentPage = page;
+          _sliderPage = page;
+        });
+        _savePageProgress();
+      },
+      itemBuilder: (context, index) {
+        return _buildPageWithFlipAnimation(index, bgColor);
+      },
+    );
+  }
+  
+  // Build individual page with flip animation
+  Widget _buildPageWithFlipAnimation(int pageIndex, Color bgColor) {
+    return AnimatedBuilder(
+      animation: _pageController!,
+      builder: (context, child) {
+        double value = 0;
+        if (_pageController!.position.haveDimensions) {
+          value = _pageController!.page! - pageIndex;
+        }
+        
+        // Apply 3D flip transformation
+        return _applyPageFlipTransform(child!, value);
+      },
+      child: _applyDarkModeFilter(
+        Container(
+          color: _isDarkMode ? Colors.white : bgColor, // Use white for inversion
+          child: PDFView(
+            key: ValueKey('pdf_page_$pageIndex'),
+            filePath: widget.book.filePathOrUri,
+            enableSwipe: false,
+            defaultPage: pageIndex,
+            fitPolicy: FitPolicy.BOTH,
+            backgroundColor: _isDarkMode ? Colors.white : bgColor,
+            onError: _onError,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  // Apply dark mode color filter to PDF content
+  Widget _applyDarkModeFilter(Widget child) {
+    if (!_isDarkMode) {
+      return child;
+    }
+    
+    // Color inversion matrix for dark mode
+    // This inverts colors: white -> black, black -> white
+    const colorMatrix = [
+      -1.0, 0.0, 0.0, 0.0, 255.0,  // Red channel
+      0.0, -1.0, 0.0, 0.0, 255.0,  // Green channel
+      0.0, 0.0, -1.0, 0.0, 255.0,  // Blue channel
+      0.0, 0.0, 0.0, 1.0, 0.0,     // Alpha channel
+    ];
+    
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix(colorMatrix),
+      child: child,
+    );
+  }
+  
+  // Apply 3D page flip transformation
+  Widget _applyPageFlipTransform(Widget child, double position) {
+    // Clamp position for smooth animation
+    final clampedPosition = position.clamp(-1.0, 1.0);
+    
+    // Calculate rotation angle (in radians)
+    final rotationY = clampedPosition * math.pi / 6; // Max 30 degrees rotation
+    
+    // Calculate scale for depth effect
+    final scale = 1.0 - (clampedPosition.abs() * 0.2); // Scale down to 0.8
+    
+    // Build transformation matrix
+    final transform = Matrix4.identity()
+      ..setEntry(3, 2, 0.001) // Perspective
+      ..rotateY(rotationY)
+      ..scale(scale);
+    
+    // Determine alignment based on scroll direction
+    final alignment = position > 0 
+        ? Alignment.centerLeft  // Page moving to the left
+        : Alignment.centerRight; // Page moving to the right
+    
+    return Transform(
+      transform: transform,
+      alignment: alignment,
+      child: Opacity(
+        opacity: (1.0 - clampedPosition.abs() * 0.5).clamp(0.5, 1.0),
+        child: child,
+      ),
     );
   }
 

@@ -185,4 +185,18 @@ class ReadingSessionRepository {
     final totalMinutes = sessions.fold(0, (sum, s) => sum + s.durationMinutes);
     return totalMinutes / sessions.length;
   }
+  
+  /// Create ReadingSession from JSON (for backup restoration)
+  ReadingSession fromJson(Map<String, dynamic> json) {
+    return ReadingSession(
+      id: json['id'] as String,
+      bookId: json['bookId'] as String,
+      startTime: DateTime.parse(json['startTime'] as String),
+      endTime: json['endTime'] != null 
+          ? DateTime.parse(json['endTime'] as String)
+          : null,
+      startPage: json['startPage'] as int,
+      endPage: json['endPage'] as int? ?? 0,
+    );
+  }
 }

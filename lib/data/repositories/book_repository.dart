@@ -71,9 +71,15 @@ class BookRepository {
     }
   }
   
+  
   /// Get total books count
   int getBooksCount() {
     final box = Hive.box<Book>(_boxName);
     return box.length;
+  }
+  
+  /// Create Book from JSON (for backup restoration)
+  Book fromJson(Map<String, dynamic> json) {
+    return Book.fromJson(json);
   }
 }

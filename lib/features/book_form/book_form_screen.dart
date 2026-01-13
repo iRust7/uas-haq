@@ -775,6 +775,7 @@ class _BookFormScreenState extends State<BookFormScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.2,
+                    color: Colors.white,
                   ),
                 ),
           ),
