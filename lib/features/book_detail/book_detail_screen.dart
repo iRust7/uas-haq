@@ -4,16 +4,20 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/book.dart';
 import '../../data/repositories/book_repository.dart';
+import '../../core/widgets/pdf_thumbnail_widget.dart';
 import '../book_form/book_form_screen.dart';
 import '../reader/reader_screen.dart';
+import '../statistics/statistics_service.dart';
 
-/// BookDetailScreen - Layar detail buku
+/// BookDetailScreen - Modern detailed book view
 /// 
-/// Menampilkan informasi lengkap buku:
-/// - Header: cover, title, author, tags
-/// - Progress: circular & linear progress indicator
-/// - Bookmarks: list halaman yang di-bookmark
-/// - Actions: Continue Reading, Edit, Share, Delete (placeholder)
+/// Features:
+/// - Hero header with PDF thumbnail
+/// - Bold typography and visual hierarchy
+/// - Modern progress indicators
+/// - Reading statistics integration
+/// - Enhanced bookmarks section
+/// - Modern action buttons
 class BookDetailScreen extends StatefulWidget {
   final Book book;
   
@@ -29,6 +33,7 @@ class BookDetailScreen extends StatefulWidget {
 class _BookDetailScreenState extends State<BookDetailScreen> {
   late Book _currentBook;
   final _bookRepository = BookRepository();
+  final _statsService = StatisticsService();
 
   @override
   void initState() {
@@ -275,32 +280,47 @@ Bagikan dari Offline Book Library
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        elevation: 0,
         title: Text(
-          _currentBook.title,
-          overflow: TextOverflow.ellipsis,
+          'BOOK DETAILS',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+            color: isDark ? Colors.white : Colors.black,
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header Section
-            _buildHeader(context),
-            const SizedBox(height: 24),
+            // Hero Header Section
+            _buildHeroHeader(isDark),
+            const SizedBox(height: 32),
             
             // Progress Section
-            _buildProgressCard(context),
-            const SizedBox(height: 16),
-            
-            // Bookmarks Section
-            _buildBookmarksCard(context),
+            _buildProgressSection(isDark),
             const SizedBox(height: 24),
             
+            // Statistics Section
+            _buildStatisticsSection(isDark),
+            const SizedBox(height: 24),
+            
+            // Bookmarks Section
+            _buildBookmarksSection(isDark),
+            const SizedBox(height: 32),
+            
             // Actions Section
-            _buildActions(context),
+            _buildActionsSection(isDark),
             const SizedBox(height: 16),
           ],
         ),
@@ -308,294 +328,636 @@ Bagikan dari Offline Book Library
     );
   }
 
-  /// Build header section
-  Widget _buildHeader(BuildContext context) {
-    return Column(
+  /// Build hero header with PDF thumbnail
+  Widget _buildHeroHeader(bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // PDF Icon/Cover placeholder
+        // PDF Thumbnail
         Container(
-          width: 100,
-          height: 140,
+          width: 120,
+          height: 168,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Icon(
-            Icons.picture_as_pdf,
-            size: 60,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Title
-        Text(
-          _currentBook.title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        // Author
-        Text(
-          _currentBook.author,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Tags
-        if (_currentBook.tags.isNotEmpty)
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: _currentBook.tags.map((tag) {
-              return Chip(
-                label: Text(tag),
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                labelStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 12,
-                ),
-              );
-            }).toList(),
-          ),
-        const SizedBox(height: 8),
-        
-        // Added date
-        Text(
-          'Ditambahkan: ${DateFormat('dd MMM yyyy').format(_currentBook.addedAt)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[500],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build progress card
-  Widget _buildProgressCard(BuildContext context) {
-    final progress = _currentBook.readingProgress;
-    final isCompleted = _currentBook.isCompleted;
-    
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Section title
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Progress Membaca',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (isCompleted)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'SELESAI',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            
-            // Circular progress
-            SizedBox(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: PdfThumbnailWidget(
+              pdfPath: _currentBook.filePathOrUri,
+              bookId: _currentBook.id,
               width: 120,
-              height: 120,
-              child: Stack(
-                alignment: Alignment.center,
+              height: 168,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(width: 20),
+        
+        // Book Info
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              Text(
+                _currentBook.title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  color: isDark ? Colors.white : Colors.black,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Author
+              Row(
                 children: [
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: CircularProgressIndicator(
-                      value: progress / 100,
-                      strokeWidth: 8,
-                      backgroundColor: Colors.grey[300],
-                      color: isCompleted 
-                        ? Colors.green 
-                        : Theme.of(context).colorScheme.primary,
-                    ),
+                  Icon(
+                    Icons.person,
+                    size: 16,
+                    color: isDark ? Colors.white70 : Colors.black54,
                   ),
-                  Text(
-                    '${progress.toStringAsFixed(0)}%',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isCompleted ? Colors.green : null,
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _currentBook.author,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Linear progress
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress / 100,
-                minHeight: 8,
-                backgroundColor: Colors.grey[300],
-                color: isCompleted 
-                  ? Colors.green 
-                  : Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            
-            // Page info
-            Text(
-              'Halaman ${_currentBook.lastPage} dari ${_currentBook.totalPages}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              
+              // Completion Badge
+              if (_currentBook.isCompleted)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green[600],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'COMPLETED',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              
+              // Tags
+              if (_currentBook.tags.isNotEmpty)
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _currentBook.tags.take(3).map((tag) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.blue[400]!,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        tag,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.blue[400],
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
         ),
+      ],
+    );
+  }
+
+  /// Build modern progress section
+  Widget _buildProgressSection(bool isDark) {
+    final progress = _currentBook.readingProgress;
+    final isCompleted = _currentBook.isCompleted;
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Text(
+            'READING PROGRESS',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Stats Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // Circular Progress
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: CircularProgressIndicator(
+                        value: progress / 100,
+                        strokeWidth: 10,
+                        backgroundColor: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+                        color: isCompleted ? Colors.green[600] : Colors.blue[600],
+                      ),
+                    ),
+                    Text(
+                      '${progress.toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Pages Info
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${_currentBook.lastPage}',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.blue[600],
+                      height: 1,
+                    ),
+                  ),
+                  Text(
+                    'of ${_currentBook.totalPages}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'PAGES',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                      color: isDark ? Colors.white38 : Colors.black38,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Linear Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress / 100,
+              minHeight: 8,
+              backgroundColor: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+              color: isCompleted ? Colors.green[600] : Colors.blue[600],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Build bookmarks card
-  Widget _buildBookmarksCard(BuildContext context) {
+  /// Build statistics section
+  Widget _buildStatisticsSection(bool isDark) {
+    Map<String, dynamic> bookStats = {
+      'totalMinutes': 0,
+      'sessionCount': 0,
+    };
+    
+    try {
+      bookStats = _statsService.getBookStatistics(_currentBook.id);
+    } catch (e) {
+      // Stats not available yet
+    }
+    
+    final totalMinutes = bookStats['totalMinutes'] as int;
+    final sessionCount = bookStats['sessionCount'] as int;
+    final hours = totalMinutes ~/ 60;
+    final mins = totalMinutes % 60;
+    final timeStr = hours > 0 ? '${hours}h ${mins}m' : '${mins}m';
+    
+    if (totalMinutes == 0) {
+      return const SizedBox.shrink();
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'READING STATS',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  icon: Icons.schedule,
+                  label: 'Time Spent',
+                  value: timeStr,
+                  color: Colors.purple,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatItem(
+                  icon: Icons.auto_stories,
+                  label: 'Sessions',
+                  value: sessionCount.toString(),
+                  color: Colors.orange,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 24, color: color),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+              color: isDark ? Colors.white54 : Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build bookmarks section with grid layout
+  Widget _buildBookmarksSection(bool isDark) {
     final hasBookmarks = _currentBook.bookmarks.isNotEmpty;
     
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section title
-            Text(
-              'Bookmarks (${_currentBook.bookmarks.length})',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF333333) : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'BOOKMARKS',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Bookmarks list or empty state
-            if (hasBookmarks)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _currentBook.bookmarks.map((page) {
-                  return ActionChip(
-                    label: Text('Hal. $page'),
-                    avatar: const Icon(Icons.bookmark, size: 16),
-                    onPressed: () => _handleJumpToBookmark(context, page),
-                  );
-                }).toList(),
-              )
-            else
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.bookmark_border,
-                        size: 48,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Belum ada bookmark',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber[700],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_currentBook.bookmarks.length}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black,
                   ),
                 ),
               ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Bookmarks Grid or Empty State
+          if (hasBookmarks)
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1.2,
+              ),
+              itemCount: _currentBook.bookmarks.length,
+              itemBuilder: (context, index) {
+                final page = _currentBook.bookmarks[index];
+                return GestureDetector(
+                  onTap: () => _handleJumpToBookmark(context, page),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bookmark,
+                          size: 20,
+                          color: Colors.amber[700],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          page.toString(),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        Text(
+                          'PAGE',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: isDark ? Colors.white38 : Colors.black38,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            )
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.bookmark_border,
+                      size: 48,
+                      color: isDark ? Colors.white24 : Colors.black12,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No bookmarks yet',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white38 : Colors.black38,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  /// Build actions section
-  Widget _buildActions(BuildContext context) {
+  /// Build modern actions section
+  Widget _buildActionsSection(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Primary action: Continue Reading
-        SizedBox(
-          height: 50,
-          child: ElevatedButton.icon(
-            onPressed: () => _handleContinueReading(context),
-            icon: const Icon(Icons.play_arrow),
-            label: Text(
-              _currentBook.lastPage > 0 ? 'Lanjutkan Membaca' : 'Mulai Membaca',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+        // Primary Action: Continue Reading - HUGE Button
+        Container(
+          height: 60,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[600]!, Colors.blue[800]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: () => _handleContinueReading(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.play_arrow, size: 28),
+                const SizedBox(width: 12),
+                Text(
+                  _currentBook.lastPage > 0 ? 'CONTINUE READING' : 'START READING',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
         const SizedBox(height: 16),
         
-        // Secondary actions
+        // Secondary Actions Row
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             // Edit
             Expanded(
-              child: OutlinedButton.icon(
+              child: _buildSecondaryAction(
+                icon: Icons.edit,
+                label: 'EDIT',
+                color: Colors.purple,
                 onPressed: () => _handleEdit(context),
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit'),
+                isDark: isDark,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             
             // Share
             Expanded(
-              child: OutlinedButton.icon(
+              child: _buildSecondaryAction(
+                icon: Icons.share,
+                label: 'SHARE',
+                color: Colors.green,
                 onPressed: () => _handleShare(context),
-                icon: const Icon(Icons.share),
-                label: const Text('Share'),
+                isDark: isDark,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             
             // Delete
             Expanded(
-              child: OutlinedButton.icon(
+              child: _buildSecondaryAction(
+                icon: Icons.delete,
+                label: 'DELETE',
+                color: Colors.red,
                 onPressed: () => _handleDelete(context),
-                icon: const Icon(Icons.delete),
-                label: const Text('Hapus'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                ),
+                isDark: isDark,
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSecondaryAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+    required bool isDark,
+  }) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
