@@ -563,22 +563,32 @@ class _ReaderScreenState extends State<ReaderScreen> {
       backgroundColor: bgColor,
       body: _errorMessage != null
           ? _buildErrorView()
-          : Stack(
+          : GestureDetector(
+              onTapDown: (details) {
+                // Only toggle overlay if tap is in center area (middle 40% of screen)
+                final screenHeight = MediaQuery.of(context).size.height;
+                final screenWidth = MediaQuery.of(context).size.width;
+                final tapY = details.localPosition.dy;
+                final tapX = details.localPosition.dx;
+                
+                // Calculate center area bounds (30% from each edge = 40% center area)
+                final centerTop = screenHeight * 0.3;
+                final centerBottom = screenHeight * 0.7;
+                final centerLeft = screenWidth * 0.3;
+                final centerRight = screenWidth * 0.7;
+                
+                // Check if tap is in center area
+                if (tapY >= centerTop && tapY <= centerBottom &&
+                    tapX >= centerLeft && tapX <= centerRight) {
+                  _toggleOverlay();
+                }
+              },
+              child: Stack(
               children: [
                 // Render based on reading mode
                 _readingMode == ReadingMode.vertical
                     ? _buildVerticalReader(bgColor)
                     : _buildHorizontalFlipReader(bgColor),
-                
-                // Transparent overlay for tap detection (only when overlay hidden)
-                if (!_showOverlay)
-                  Positioned.fill(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: _toggleOverlay,
-                      child: Container(color: Colors.transparent),
-                    ),
-                  ),
                 
                 // Loading indicator
                 if (!_isReady)
@@ -598,6 +608,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 _buildPagePreview(),
               ],
             ),
+          ),
     );
   }
   
